@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ExploreNet — Neural Search</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+      color: #334155;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .app {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 320px;
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-right: 1px solid rgba(255, 255, 255, 0.5);
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      box-shadow: 5px 0 25px rgba(0, 0, 0, 0.03);
+      z-index: 10;
+    }
+
+    .sidebar-header {
+      margin-bottom: 30px;
+    }
+
+    .new-search-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border: none;
+      border-radius: 16px;
+      padding: 16px 20px;
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+    }
+
+    .new-search-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+    }
+
+    .new-search-btn .icon {
+      width: 20px;
+      height: 20px;
+    }
+
+    .search-history {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-bottom: 8px;
+      color: #475569;
+    }
+
+    .history-item:hover {
+      background: rgba(255, 255, 255, 0.6);
+      color: #1e293b;
+    }
+
+    .history-icon {
+      width: 16px;
+      height: 16px;
+      color: #3b82f6;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .history-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .history-title {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .history-date {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      border-radius: 16px;
+    }
+
+    .footer-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 4px;
+    }
+
+    .footer-subtitle {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    /* Main */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Decorative background blobs */
+    .main-content::before {
+      content: '';
+      position: absolute;
+      top: -10%;
+      right: -5%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, rgba(255, 255, 255, 0) 70%);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      padding: 20px 40px;
+      gap: 20px;
+    }
+
+    .menu-btn {
+      background: white;
+      border: 1px solid #e2e8f0;
+      color: #64748b;
+      cursor: pointer;
+      padding: 10px;
+      border-radius: 12px;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+      display: none;
+      /* Hidden on desktop */
+    }
+
+    .menu-btn:hover {
+      background: #f8fafc;
+      color: #334155;
+      transform: translateY(-1px);
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+    }
+
+    .brand-icon svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1e293b;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-subtitle {
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .logout-btn {
+      margin-left: auto;
+      padding: 10px 20px;
+      background: white;
+      color: #ef4444;
+      border: 1px solid #fee2e2;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: 0.2s ease;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+    }
+
+    .logout-btn:hover {
+      background: #fef2f2;
+      transform: translateY(-1px);
+      border-color: #fecaca;
+    }
+
+    /* Welcome */
+    .welcome-section {
+      text-align: center;
+      padding: 60px 40px 40px;
+    }
+
+    .welcome-icon {
+      width: 80px;
+      height: 80px;
+      background: white;
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 30px;
+      color: #3b82f6;
+      box-shadow: 0 10px 30px rgba(59, 130, 246, 0.15);
+    }
+
+    .welcome-icon svg {
+      width: 36px;
+      height: 36px;
+    }
+
+    .welcome-title {
+      font-size: 36px;
+      font-weight: 800;
+      color: #1e293b;
+      margin-bottom: 16px;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+
+      /* Typing Animation */
+      overflow: hidden;
+      border-right: .15em solid #3b82f6;
+      white-space: nowrap;
+      margin: 0 auto 16px;
+      letter-spacing: .05em;
+      animation:
+        typing 2.5s steps(30, end),
+        blink-caret .75s step-end infinite;
+      max-width: fit-content;
+    }
+
+    @keyframes typing {
+      from {
+        width: 0
+      }
+
+      to {
+        width: 100%
+      }
+    }
+
+    @keyframes blink-caret {
+
+      from,
+      to {
+        border-color: transparent
+      }
+
+      50% {
+        border-color: #3b82f6
+      }
+    }
+
+    .welcome-description {
+      font-size: 18px;
+      color: #64748b;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* Quick actions */
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      padding: 0 40px;
+      margin-bottom: 40px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .action-card {
+      background: rgba(255, 255, 255, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      border-radius: 20px;
+      padding: 24px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+    }
+
+    .action-card:hover {
+      background: white;
+      border-color: #3b82f6;
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px -4px rgba(59, 130, 246, 0.1);
+    }
+
+    .action-icon {
+      width: 40px;
+      height: 40px;
+      background: #eff6ff;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #3b82f6;
+      flex-shrink: 0;
+    }
+
+    .action-icon svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .action-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: #334155;
+    }
+
+    /* Chat section */
+    .chat-section {
+      padding: 0 40px 20px;
+      flex: 1;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .chat-messages {
+      max-width: 800px;
+      margin: 0 auto 20px;
+    }
+
+    .message-row {
+      display: flex;
+      margin-bottom: 24px;
+    }
+
+    .message-bubble {
+      padding: 16px 24px;
+      border-radius: 20px;
+      max-width: 75%;
+      line-height: 1.6;
+      font-size: 15px;
+      word-wrap: break-word;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+    }
+
+    .message-ai .message-bubble {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-top-left-radius: 4px;
+      color: #334155;
+    }
+
+    .message-user {
+      justify-content: flex-end;
+    }
+
+    .message-user .message-bubble {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border-radius: 20px 4px 20px 20px;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+    }
+
+    .message-bubble.loading {
+      opacity: 0.7;
+      font-style: italic;
+      background: #f1f5f9;
+    }
+
+    /* Search section */
+    .search-section {
+      padding: 0 40px;
+      margin-bottom: 40px;
+    }
+
+    .search-container {
+      position: relative;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .search-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      border-radius: 20px;
+      padding: 20px 70px 20px 24px;
+      font-size: 16px;
+      color: #1e293b;
+      outline: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+    }
+
+    .search-input::placeholder {
+      color: #94a3b8;
+    }
+
+    .search-input:focus {
+      border-color: #3b82f6;
+      background: white;
+      box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.15);
+    }
+
+    .search-submit {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #3b82f6;
+      border: none;
+      border-radius: 14px;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: white;
+    }
+
+    .search-submit:hover {
+      background: #2563eb;
+      transform: translateY(-50%) scale(1.05);
+    }
+
+    .search-submit svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: auto;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .footer-text {
+      font-size: 13px;
+      color: #94a3b8;
+      text-align: center;
+    }
+
+    .help-btn {
+      background: white;
+      border: 1px solid #e2e8f0;
+      color: #64748b;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .help-btn:hover {
+      color: #3b82f6;
+      border-color: #3b82f6;
+    }
+
+    .help-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .app {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        height: auto;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      .header {
+        padding: 16px 20px;
+      }
+
+      .welcome-section {
+        padding: 40px 20px 30px;
+      }
+
+      .welcome-title {
+        font-size: 28px;
+      }
+
+      .quick-actions {
+        grid-template-columns: 1fr;
+        padding: 0 20px;
+        gap: 16px;
+      }
+
+      .chat-section {
+        padding: 0 20px 20px;
+      }
+
+      .search-section {
+        padding: 0 20px;
+      }
+
+      .footer {
+        padding: 16px 20px;
+      }
+
+      .menu-btn {
+        display: block;
+        /* Show menu button on mobile */
+      }
+    }
+
+    @media (max-width: 480px) {
+      .sidebar {
+        padding: 16px;
+      }
+
+      .welcome-icon {
+        width: 60px;
+        height: 60px;
+      }
+
+      .welcome-icon svg {
+        width: 24px;
+        height: 24px;
+      }
+
+      .welcome-title {
+        font-size: 24px;
+      }
+
+      .welcome-description {
+        font-size: 15px;
+      }
+
+      .action-card {
+        padding: 20px;
+      }
+    }
+
+    /* Mobile: sidebar hidden by default */
+    @media (max-width: 768px) {
+      .sidebar {
+        transform: translateX(-100%);
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 280px;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 999;
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
+      }
+
+      .sidebar.mobile-open {
+        transform: translateX(0);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+
+
+
+
+    <!-- Main -->
+    <main class="main-content">
+      <header class="header" style="display:flex;align-items:center;justify-content:space-between;">
+
+        <!-- LEFT: MENU BUTTON -->
+        <button class="menu-btn" style="background:none;border:none;color:#94a3b8;cursor:pointer;padding:8px;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+
+        <!-- CENTER: BRAND -->
+        <div class="header-brand" style="display:flex;align-items:center;gap:12px;">
+          <div class="brand-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z" />
+            </svg>
+          </div>
+          <div class="brand-text">
+            <div class="brand-title">ExploreNet</div>
+            <div class="brand-subtitle">AI-Powered Intelligence</div>
+          </div>
+        </div>
+
+        <!-- RIGHT: LOGOUT BUTTON -->
+        <button class="logout-btn" onclick="logout()">Logout</button>
+
+      </header>
+
+
+      <!-- Welcome -->
+      <section class="welcome-section">
+        <div class="welcome-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z" />
+          </svg>
+        </div>
+        <h1 class="welcome-title">Welcome to SearchNet</h1>
+        <p class="welcome-description">
+          Experience the future of search. Ask anything and get intelligent responses powered by AI and the web.
+        </p>
+      </section>
+
+      <!-- Quick actions -->
+      <section class="quick-actions">
+        <div class="action-card">
+          <div class="action-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
+            </svg>
+          </div>
+          <div class="action-text">Explain quantum computing</div>
+        </div>
+
+        <div class="action-card">
+          <div class="action-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path
+                d="M14.828 14.828a4 4 0 0 1-5.656 0M9 10h.01M15 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z">
+              </path>
+            </svg>
+          </div>
+          <div class="action-text">Write a creative story</div>
+        </div>
+
+        <div class="action-card">
+          <div class="action-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+          </div>
+          <div class="action-text">Debug my code</div>
+        </div>
+
+        <div class="action-card">
+          <div class="action-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14,2 14,8 20,8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10,9 9,9 8,9"></polyline>
+            </svg>
+          </div>
+          <div class="action-text">Plan a project</div>
+        </div>
+      </section>
+
+      <!-- Chat -->
+      <section class="chat-section" id="chat-section">
+        <div class="chat-messages" id="chat-messages"></div>
+      </section>
+
+      <!-- Search -->
+      <section class="search-section">
+        <!-- Mode buttons will be injected here by JS -->
+        <div class="search-container">
+          <input type="text" class="search-input" placeholder="Ask anything..." />
+          <button class="search-submit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22,2 15,22 11,13 2,9 22,2"></polygon>
+            </svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="footer">
+        <p class="footer-text">ExploreNet can make mistakes. Consider checking important information.</p>
+        <button class="help-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </button>
+      </footer>
+    </main>
+  </div>
+  <script>
+    const menuBtn = document.querySelector('.menu-btn');
+    const sidebar = document.querySelector('.sidebar');
+
+    // Open/close sidebar on mobile
+    menuBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('mobile-open');
+    });
+
+    // Clicking outside closes sidebar
+    document.addEventListener('click', (e) => {
+      if (window.innerWidth <= 768) {
+        if (!sidebar.contains(e.target) && !menuBtn.contains(e.target)) {
+          sidebar.classList.remove('mobile-open');
+        }
+      }
+    });
+
+    // When resizing back to desktop → reset sidebar
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 768) {
+        sidebar.classList.remove('mobile-open');
+      }
+    });
+
+
+
+
+
+    // simple logout
+    function logout() {
+      localStorage.removeItem("signedIn");
+      localStorage.removeItem("snDailyAiUsage");
+      window.location.href = "index.html";
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      // BACKEND URL auto-switch
+      const BACKEND =
+        (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+          ? "http://localhost:5000/api/search"
+          : "https://searchnet.onrender.com/api/search";
+
+      const searchInput = document.querySelector(".search-input");
+      const searchSubmit = document.querySelector(".search-submit");
+      const chatSection = document.getElementById("chat-section");
+      const chatMessages = document.getElementById("chat-messages");
+      const welcomeSection = document.querySelector(".welcome-section");
+      const quickActions = document.querySelector(".quick-actions");
+      const newSearchBtn = document.querySelector(".new-search-btn");
+      const historyContainer = document.querySelector(".search-history");
+      const menuBtn = document.querySelector(".menu-btn");
+      const sidebar = document.querySelector(".sidebar");
+
+      // --- Mode buttons bar ---
+      let currentMode = "ai"; // default
+
+      const modeBar = document.createElement("div");
+      modeBar.innerHTML = `
+        <div style="max-width:800px;margin:0 auto 10px;display:flex;gap:10px;">
+          <button class="mode-btn mode-active" data-mode="ai"
+            style="flex:1;padding:10px;border-radius:20px;border:1px solid #38bdf8;background:#1e293b;color:#38bdf8;font-size:13px;cursor:pointer;">
+            AI Mode
+          </button>
+          <button class="mode-btn" data-mode="web"
+            style="flex:1;padding:10px;border-radius:20px;border:1px solid #475569;background:#0f172a;color:#94a3b8;font-size:13px;cursor:pointer;">
+            Web Summary
+          </button>
+        </div>
+      `;
+      document.querySelector(".search-section").prepend(modeBar);
+
+      function updateModeButtons() {
+        document.querySelectorAll(".mode-btn").forEach((btn) => {
+          const mode = btn.dataset.mode;
+          if (mode === currentMode) {
+            btn.classList.add("mode-active");
+            btn.style.background = "#1e293b";
+            btn.style.color = "#38bdf8";
+            btn.style.borderColor = "#38bdf8";
+          } else {
+            btn.classList.remove("mode-active");
+            btn.style.background = "#0f172a";
+            btn.style.color = "#94a3b8";
+            btn.style.borderColor = "#475569";
+          }
+        });
+      }
+
+      document.querySelectorAll(".mode-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          currentMode = btn.dataset.mode;
+          updateModeButtons();
+        });
+      });
+
+      // --- Chat helpers ---
+      function showChatUI() {
+        if (welcomeSection) welcomeSection.style.display = "none";
+        if (quickActions) quickActions.style.display = "none";
+        chatSection.style.display = "block";
+      }
+
+      function addMessage(role, text) {
+        const row = document.createElement("div");
+        row.className = "message-row " + (role === "user" ? "message-user" : "message-ai");
+
+        const bubble = document.createElement("div");
+        bubble.className = "message-bubble";
+        bubble.innerHTML = (text || "").replace(/\n/g, "<br>");
+
+        row.appendChild(bubble);
+        chatMessages.appendChild(row);
+        chatSection.scrollTop = chatSection.scrollHeight;
+      }
+
+      function addHistoryItem(title) {
+        const date = new Date().toLocaleDateString();
+        const item = document.createElement("div");
+        item.className = "history-item";
+        item.innerHTML = `
+          <svg class="history-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14,2 14,8 20,8"></polyline>
+          </svg>
+          <div class="history-content">
+            <div class="history-title">${title}</div>
+            <div class="history-date">${date}</div>
+          </div>
+        `;
+        historyContainer.prepend(item);
+      }
+
+      // front-end daily limit for AI mode (per browser)
+      const MAX_AI_PER_DAY_FRONT = 20;
+      function canUseAiToday() {
+        const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+        const raw = localStorage.getItem("snDailyAiUsage") || "{}";
+        let data;
+        try {
+          data = JSON.parse(raw);
+        } catch {
+          data = {};
+        }
+        const count = data[today] || 0;
+        if (count >= MAX_AI_PER_DAY_FRONT) {
+          return { ok: false, remaining: 0 };
+        }
+        data[today] = count + 1;
+        localStorage.setItem("snDailyAiUsage", JSON.stringify(data));
+        return { ok: true, remaining: MAX_AI_PER_DAY_FRONT - (count + 1) };
+      }
+
+      // --- Main search action ---
+      async function performSearch() {
+        const text = searchInput.value.trim();
+        if (!text) return;
+
+        // enforce frontend AI limit
+        if (currentMode === "ai") {
+          const limit = canUseAiToday();
+          if (!limit.ok) {
+            alert("You have reached your daily free AI limit (20). Please try Web Summary mode or try again tomorrow.");
+            return;
+          }
+        }
+
+        showChatUI();
+        addMessage("user", text);
+
+        const loader = document.createElement("div");
+        loader.className = "message-row message-ai";
+        loader.innerHTML = `<div class="message-bubble loading">Thinking...</div>`;
+        chatMessages.appendChild(loader);
+        chatSection.scrollTop = chatSection.scrollHeight;
+
+        try {
+          const res = await fetch(BACKEND, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              query: text,
+              mode: currentMode,
+            }),
+          });
+
+          const data = await res.json();
+          loader.remove();
+
+          if (currentMode === "ai") {
+            addMessage("ai", data.answer || "No AI response.");
+          } else {
+            let html = "";
+            if (data.answer) {
+              html += `<b>${data.answer}</b><br><br>`;
+            } else {
+              html += "<b>No summary available.</b><br><br>";
+            }
+            if (Array.isArray(data.results) && data.results.length) {
+              html += "<u>Sources:</u><br>";
+              data.results.forEach((r) => {
+                if (!r) return;
+                const title = r.title || r.url || "Source";
+                if (r.url) {
+                  html += `• <a href="${r.url}" target="_blank">${title}</a><br>`;
+                } else {
+                  html += `• ${title}<br>`;
+                }
+              });
+            }
+            addMessage("ai", html);
+          }
+        } catch (err) {
+          console.error(err);
+          loader.remove();
+          addMessage("ai", "❌ Error connecting to backend.");
+        }
+
+        searchInput.value = "";
+      }
+
+      // Search triggers
+      searchSubmit.addEventListener("click", performSearch);
+      searchInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") performSearch();
+      });
+
+      // Quick actions
+      document.querySelectorAll(".action-card").forEach((card) => {
+        card.addEventListener("click", () => {
+          const text = card.querySelector(".action-text").textContent;
+          searchInput.value = text;
+          performSearch();
+        });
+      });
+
+      // New search (new chat)
+      newSearchBtn.addEventListener("click", () => {
+        const firstUserMsg = chatMessages.querySelector(".message-user .message-bubble");
+        if (firstUserMsg) {
+          const text = firstUserMsg.textContent || "";
+          const title = text.length > 28 ? text.slice(0, 28) + "..." : text;
+          addHistoryItem(title || "New chat");
+        }
+        chatMessages.innerHTML = "";
+        if (welcomeSection) welcomeSection.style.display = "block";
+        if (quickActions) quickActions.style.display = "grid";
+        chatSection.style.display = "none";
+        searchInput.value = "";
+        searchInput.focus();
+      });
+
+      // Mobile sidebar toggle
+      menuBtn.addEventListener("click", () => {
+        sidebar.classList.toggle("mobile-open");
+      });
+
+      document.addEventListener("click", (e) => {
+        if (window.innerWidth <= 768) {
+          if (!sidebar.contains(e.target) && !menuBtn.contains(e.target)) {
+            sidebar.classList.remove("mobile-open");
+          }
+        }
+      });
+
+      window.addEventListener("resize", () => {
+        if (window.innerWidth > 768) {
+          sidebar.classList.remove("mobile-open");
+        }
+      });
+
+      // smooth scroll
+      document.documentElement.style.scrollBehavior = "smooth";
+
+      updateModeButtons(); // set initial mode styles
+    });
+  </script>
+</body>
+
+</html>
