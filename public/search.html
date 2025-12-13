@@ -555,9 +555,14 @@
       }
 
       .quick-actions {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
         padding: 0 20px;
         gap: 16px;
+      }
+
+      /* Show only first 2 items on mobile */
+      .quick-actions .action-card:nth-child(n+3) {
+        display: none;
       }
 
       .chat-section {
@@ -764,13 +769,15 @@
     const sidebar = document.querySelector('.sidebar');
 
     // Open/close sidebar on mobile
-    menuBtn.addEventListener('click', () => {
-      sidebar.classList.toggle('mobile-open');
-    });
+    if (menuBtn && sidebar) {
+      menuBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('mobile-open');
+      });
+    }
 
     // Clicking outside closes sidebar
     document.addEventListener('click', (e) => {
-      if (window.innerWidth <= 768) {
+      if (window.innerWidth <= 768 && sidebar && menuBtn) {
         if (!sidebar.contains(e.target) && !menuBtn.contains(e.target)) {
           sidebar.classList.remove('mobile-open');
         }
@@ -779,11 +786,10 @@
 
     // When resizing back to desktop → reset sidebar
     window.addEventListener('resize', () => {
-      if (window.innerWidth > 768) {
+      if (window.innerWidth > 768 && sidebar) {
         sidebar.classList.remove('mobile-open');
       }
     });
-
 
 
 
@@ -996,28 +1002,32 @@
       });
 
       // New search (new chat)
-      newSearchBtn.addEventListener("click", () => {
-        const firstUserMsg = chatMessages.querySelector(".message-user .message-bubble");
-        if (firstUserMsg) {
-          const text = firstUserMsg.textContent || "";
-          const title = text.length > 28 ? text.slice(0, 28) + "..." : text;
-          addHistoryItem(title || "New chat");
-        }
-        chatMessages.innerHTML = "";
-        if (welcomeSection) welcomeSection.style.display = "block";
-        if (quickActions) quickActions.style.display = "grid";
-        chatSection.style.display = "none";
-        searchInput.value = "";
-        searchInput.focus();
-      });
+      if (newSearchBtn) {
+        newSearchBtn.addEventListener("click", () => {
+          const firstUserMsg = chatMessages.querySelector(".message-user .message-bubble");
+          if (firstUserMsg) {
+            const text = firstUserMsg.textContent || "";
+            const title = text.length > 28 ? text.slice(0, 28) + "..." : text;
+            addHistoryItem(title || "New chat");
+          }
+          chatMessages.innerHTML = "";
+          if (welcomeSection) welcomeSection.style.display = "block";
+          if (quickActions) quickActions.style.display = "grid";
+          chatSection.style.display = "none";
+          searchInput.value = "";
+          searchInput.focus();
+        });
+      }
 
       // Mobile sidebar toggle
-      menuBtn.addEventListener("click", () => {
-        sidebar.classList.toggle("mobile-open");
-      });
+      if (menuBtn && sidebar) {
+        menuBtn.addEventListener("click", () => {
+          sidebar.classList.toggle("mobile-open");
+        });
+      }
 
       document.addEventListener("click", (e) => {
-        if (window.innerWidth <= 768) {
+        if (window.innerWidth <= 768 && sidebar && menuBtn) {
           if (!sidebar.contains(e.target) && !menuBtn.contains(e.target)) {
             sidebar.classList.remove("mobile-open");
           }
@@ -1025,7 +1035,7 @@
       });
 
       window.addEventListener("resize", () => {
-        if (window.innerWidth > 768) {
+        if (window.innerWidth > 768 && sidebar) {
           sidebar.classList.remove("mobile-open");
         }
       });
