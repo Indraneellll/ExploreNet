@@ -433,7 +433,8 @@
     /* Search section */
     .search-section {
       padding: 0 40px;
-      margin-bottom: 40px;
+      margin-bottom: 10px;
+      margin-top: auto;
     }
 
     .search-container {
@@ -448,7 +449,7 @@
       backdrop-filter: blur(10px);
       border: 1px solid rgba(226, 232, 240, 0.8);
       border-radius: 20px;
-      padding: 20px 70px 20px 24px;
+      padding: 12px 70px 12px 24px;
       font-size: 16px;
       color: #1e293b;
       outline: none;
@@ -496,8 +497,8 @@
 
     /* Footer */
     .footer {
-      margin-top: auto;
-      padding: 20px 40px;
+      margin-top: 10px;
+      padding: 10px 40px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -825,13 +826,13 @@
 
       const modeBar = document.createElement("div");
       modeBar.innerHTML = `
-        <div style="max-width:800px;margin:0 auto 10px;display:flex;gap:10px;">
+        <div style="max-width:800px;margin:0 auto 5px;display:flex;gap:10px;">
           <button class="mode-btn mode-active" data-mode="ai"
-            style="flex:1;padding:10px;border-radius:20px;border:1px solid #38bdf8;background:#1e293b;color:#38bdf8;font-size:13px;cursor:pointer;">
+            style="flex:1;padding:6px;border-radius:20px;border:1px solid #38bdf8;background:#1e293b;color:#38bdf8;font-size:13px;cursor:pointer;">
             AI Mode
           </button>
           <button class="mode-btn" data-mode="web"
-            style="flex:1;padding:10px;border-radius:20px;border:1px solid #475569;background:#0f172a;color:#94a3b8;font-size:13px;cursor:pointer;">
+            style="flex:1;padding:6px;border-radius:20px;border:1px solid #475569;background:#0f172a;color:#94a3b8;font-size:13px;cursor:pointer;">
             Web Summary
           </button>
         </div>
