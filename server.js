@@ -2,22 +2,24 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import fetch from "node-fetch"; // IMPORTANT for Render / Node < 18
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+app.set("trust proxy", true);
 app.use(cors());
-app.use(express.json());
-app.use(express.static("public")); // where index.html, search.html live
+app.use(express.json({ limit: "10kb" }));
+app.use(express.static("public"));
 
-// ============ SIMPLE PER-IP DAILY LIMITS ============
+/* ===================== PER-IP DAILY LIMITS ===================== */
 let usageByIp = {};
 let lastReset = Date.now();
 
-const MAX_AI_PER_DAY = 20;     // per IP per day
-const MAX_WEB_PER_DAY = 100;   // per IP per day (you can change)
+const MAX_AI_PER_DAY = 20;
+const MAX_WEB_PER_DAY = 100;
 
 function resetIfNeeded() {
   const ONE_DAY = 24 * 60 * 60 * 1000;
@@ -42,160 +44,187 @@ function ensureIpSlot(ip) {
   return usageByIp[ip];
 }
 
-function isNetworkError(err) {
-  return (
-    err &&
-    (err.code === "ENOTFOUND" ||
-      err.code === "ECONNREFUSED" ||
-      err.code === "EAI_AGAIN" ||
-      err.code === "ETIMEDOUT")
+/* ===================== INTELLIGENCE LAYER ===================== */
+
+// Identity questions (never go to Tavily)
+function isIdentityQuestion(query) {
+  return /who are you|what are you|your name|what is explorenet/i.test(
+    query.toLowerCase()
   );
 }
 
-// ================== MAIN SEARCH ROUTE ==================
+// STRICT vague detector (ONLY for follow-ups)
+function isVagueQuery(query) {
+  const q = query.trim().toLowerCase();
+
+  // very short, subject-less commands
+  if (q.split(" ").length <= 2) {
+    return ["explain", "more", "why", "how", "details"].includes(q);
+  }
+
+  return false;
+}
+
+// Confidence score for memory safety
+function scoreAnswerConfidence(answer) {
+  if (!answer) return 0;
+
+  let score = 0;
+  if (answer.length > 120) score += 0.4;
+  if (answer.includes(".")) score += 0.2;
+  if (!answer.toLowerCase().includes("no answer")) score += 0.2;
+  if (!answer.toLowerCase().includes("cannot")) score += 0.2;
+
+  return Math.min(score, 1);
+}
+
+// Build Tavily query safely
+function buildContextualQuery(query, memory = []) {
+  // FIRST question → NEVER modify
+  if (!memory || memory.length === 0) {
+    return query;
+  }
+
+  const last = memory[memory.length - 1];
+
+  // ONLY expand vague follow-ups
+  if (isVagueQuery(query)) {
+    return `Explain ${last.topic} in more detail with examples and simple language.`;
+  }
+
+  return `
+Previous topic: ${last.topic}
+Previous answer: ${last.answer}
+
+Follow-up question: ${query}
+Answer clearly using the previous context.
+`.trim();
+}
+
+/* ===================== MAIN SEARCH ROUTE ===================== */
 app.post("/api/search", async (req, res) => {
   resetIfNeeded();
 
-  const { query, mode } = req.body || {};
+  const { query, mode, memory } = req.body || {};
+
   if (!query || typeof query !== "string") {
-    return res.status(400).json({ answer: "Missing or invalid 'query'." });
+    return res.status(400).json({ answer: "Invalid query." });
+  }
+
+  /* ---------- Identity handling ---------- */
+  if (isIdentityQuestion(query)) {
+    return res.json({
+      answer:
+        "I am ExploreNet — a smart search assistant. I connect your questions, remember context, and summarize information from the web to give clear answers.",
+      confidence: 1,
+    });
   }
 
   const ip = getIp(req);
   const usage = ensureIpSlot(ip);
 
-  try {
-    // ===================== AI MODE (GROQ) =====================
-    if (mode === "ai") {
-      if (usage.ai >= MAX_AI_PER_DAY) {
-        return res.json({
-          answer:
-            "You have reached the free AI limit for today. Please try again tomorrow or use Web Summary mode.",
-        });
-      }
-
-      usage.ai += 1;
-
-      const groqKey = process.env.GROQ_API_KEY;
-      if (!groqKey) {
-        return res.json({
-          answer: `Mock AI response for "${query}" (GROQ_API_KEY not set on server).`,
-        });
-      }
-
-      try {
-        const aiRes = await fetch(
-          "https://api.groq.com/openai/v1/chat/completions",
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${groqKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "llama-3.1-8b-instant", // or another Groq model
-              messages: [
-                {
-                  role: "system",
-                  content:
-                    "You are ExploreNet, a helpful, clear and concise AI assistant. Explain things in simple language, especially for a class 9–10 student. Avoid unsafe or illegal instructions.",
-                },
-                { role: "user", content: query },
-              ],
-              temperature: 0.6,
-              max_tokens: 512,
-            }),
-          }
-        );
-
-        const aiData = await aiRes.json();
-        const answer =
-          aiData?.choices?.[0]?.message?.content ||
-          "AI error: No response from Groq model.";
-
-        return res.json({ answer });
-      } catch (err) {
-        console.error("GROQ AI error:", err);
-
-        if (isNetworkError(err)) {
-          return res.json({
-            answer: `Mock AI response for "${query}" (network cannot reach Groq from this server).`,
-          });
-        }
-
-        return res.json({
-          answer: "AI error: Unexpected server error while calling Groq.",
-        });
-      }
-    }
-
-    // ===================== WEB MODE (TAVILY) =====================
-    if (mode === "web") {
-      if (usage.web >= MAX_WEB_PER_DAY) {
-        return res.json({
-          answer:
-            "You have reached the free Web Summary limit for today. Please try again tomorrow.",
-          results: [],
-        });
-      }
-
-      usage.web += 1;
-
-      const tavKey = process.env.TAVILY_API_KEY;
-      if (!tavKey) {
-        return res.json({
-          answer: `Mock web summary for "${query}" (TAVILY_API_KEY not set on server).`,
-          results: [],
-        });
-      }
-
-      try {
-        const webRes = await fetch("https://api.tavily.com/search", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${tavKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            query,
-            search_depth: "advanced",
-            include_answer: true,
-            max_results: 8,
-          }),
-        });
-
-        const webData = await webRes.json();
-        return res.json(webData);
-      } catch (err) {
-        console.error("Tavily web error:", err);
-
-        if (isNetworkError(err)) {
-          return res.json({
-            answer: `Mock web summary for "${query}" (network cannot reach Tavily from this server).`,
-            results: [],
-          });
-        }
-
-        return res.json({
-          answer: "Web summary error: Unexpected server error.",
-          results: [],
-        });
-      }
-    }
-
-    // ===================== INVALID MODE =====================
+  const tavKey = process.env.TAVILY_API_KEY;
+  if (!tavKey) {
     return res.json({
-      answer: "Invalid mode. Use 'ai' or 'web'.",
-    });
-  } catch (err) {
-    console.error("GLOBAL SERVER ERROR:", err);
-    return res.status(500).json({
-      answer: "Server crashed internally.",
+      answer: `Mock response for "${query}" (TAVILY_API_KEY not set).`,
+      confidence: 0.3,
+      results: [],
     });
   }
+
+  /* ===================== AI MODE (FAKE AI) ===================== */
+  if (mode === "ai") {
+    if (usage.ai >= MAX_AI_PER_DAY) {
+      return res.json({
+        answer: "Daily AI mode limit reached. Try again tomorrow.",
+        confidence: 0,
+      });
+    }
+    usage.ai += 1;
+
+    // accept only strong memory from frontend
+    const safeMemory = Array.isArray(memory)
+      ? memory.filter(m => m.confidence >= 0.6).slice(-3)
+      : [];
+
+    const finalQuery = buildContextualQuery(query, safeMemory);
+
+    try {
+      const r = await fetch("https://api.tavily.com/search", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tavKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: finalQuery,
+          search_depth: "advanced",
+          include_answer: true,
+          max_results: 5,
+        }),
+      });
+
+      const data = await r.json();
+      const answer = data.answer || "No answer found.";
+      const confidence = scoreAnswerConfidence(answer);
+
+      return res.json({ answer, confidence });
+    } catch (err) {
+      console.error("AI mode error:", err);
+      return res.json({
+        answer: "Network error while searching. Please try again.",
+        confidence: 0,
+      });
+    }
+  }
+
+  /* ===================== WEB SUMMARY MODE ===================== */
+  if (mode === "web") {
+    if (usage.web >= MAX_WEB_PER_DAY) {
+      return res.json({
+        answer: "Daily Web Summary limit reached.",
+        results: [],
+      });
+    }
+    usage.web += 1;
+
+    try {
+      const r = await fetch("https://api.tavily.com/search", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tavKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query,
+          search_depth: "advanced",
+          include_answer: true,
+          max_results: 8,
+        }),
+      });
+
+      const data = await r.json();
+
+      return res.json({
+        answer: data.answer || "No summary available.",
+        results: data.results || [],
+      });
+    } catch (err) {
+      console.error("Web mode error:", err);
+      return res.json({
+        answer: "Network error while fetching web results.",
+        results: [],
+      });
+    }
+  }
+
+  return res.json({
+    answer: "Invalid mode.",
+    results: [],
+  });
 });
 
-// ================== START SERVER ==================
+/* ===================== START SERVER ===================== */
 app.listen(PORT, () => {
-  console.log(`🚀 Backend running at http://localhost:${PORT}`);
+  console.log(`🚀 Backend running on port ${PORT}`);
 });
