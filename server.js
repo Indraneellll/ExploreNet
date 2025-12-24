@@ -2,7 +2,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import fetch from "node-fetch"; // IMPORTANT for Render / Node < 18
+import fetch from "node-fetch";
 
 dotenv.config();
 
@@ -12,9 +12,8 @@ const PORT = process.env.PORT || 5000;
 app.set("trust proxy", true);
 app.use(cors());
 app.use(express.json({ limit: "10kb" }));
-app.use(express.static("public"));
 
-/* ===================== PER-IP DAILY LIMITS ===================== */
+/* ===================== USAGE LIMITS ===================== */
 let usageByIp = {};
 let lastReset = Date.now();
 
@@ -22,8 +21,7 @@ const MAX_AI_PER_DAY = 20;
 const MAX_WEB_PER_DAY = 100;
 
 function resetIfNeeded() {
-  const ONE_DAY = 24 * 60 * 60 * 1000;
-  if (Date.now() - lastReset > ONE_DAY) {
+  if (Date.now() - lastReset > 24 * 60 * 60 * 1000) {
     usageByIp = {};
     lastReset = Date.now();
   }
@@ -37,91 +35,80 @@ function getIp(req) {
   );
 }
 
-function ensureIpSlot(ip) {
-  if (!usageByIp[ip]) {
-    usageByIp[ip] = { ai: 0, web: 0 };
-  }
+function ensureIp(ip) {
+  if (!usageByIp[ip]) usageByIp[ip] = { ai: 0, web: 0 };
   return usageByIp[ip];
 }
 
-/* ===================== INTELLIGENCE LAYER ===================== */
+/* ===================== INTELLIGENCE ===================== */
 
-// Identity questions (never go to Tavily)
+/* ---- Identity questions (MUST NEVER hit Tavily) ---- */
 function isIdentityQuestion(query) {
-  return /who are you|what are you|your name|what is explorenet/i.test(
-    query.toLowerCase()
+  const q = query.toLowerCase().trim();
+  return (
+    q === "who are you" ||
+    q === "who made you" ||
+    q === "who created you" ||
+    q === "who built you" ||
+    q === "what are you" ||
+    q.includes("your creator") ||
+    q.includes("who developed you")
   );
 }
 
-// STRICT vague detector (ONLY for follow-ups)
+/* ---- Strict vague detector (ONLY command words) ---- */
 function isVagueQuery(query) {
   const q = query.trim().toLowerCase();
-
-  // very short, subject-less commands
-  if (q.split(" ").length <= 2) {
-    return ["explain", "more", "why", "how", "details"].includes(q);
-  }
-
-  return false;
+  const vagueWords = ["explain", "more", "why", "how", "details"];
+  return vagueWords.includes(q);
 }
 
-// Confidence score for memory safety
+/* ---- Confidence scoring ---- */
 function scoreAnswerConfidence(answer) {
   if (!answer) return 0;
-
   let score = 0;
   if (answer.length > 120) score += 0.4;
   if (answer.includes(".")) score += 0.2;
   if (!answer.toLowerCase().includes("no answer")) score += 0.2;
   if (!answer.toLowerCase().includes("cannot")) score += 0.2;
-
   return Math.min(score, 1);
 }
 
-// Build Tavily query safely
+/* ---- Context builder (SAFE) ---- */
 function buildContextualQuery(query, memory = []) {
-  // FIRST question → NEVER modify
-  if (!memory || memory.length === 0) {
+  // First question → NEVER modify
+  if (!Array.isArray(memory) || memory.length === 0) {
     return query;
   }
 
   const last = memory[memory.length - 1];
 
-  // ONLY expand vague follow-ups
+  // Only expand true vague follow-ups
   if (isVagueQuery(query)) {
     return `Explain ${last.topic} in more detail with examples and simple language.`;
   }
 
-  return `
-Previous topic: ${last.topic}
-Previous answer: ${last.answer}
-
-Follow-up question: ${query}
-Answer clearly using the previous context.
-`.trim();
+  // Otherwise, send clean query
+  return query;
 }
 
-/* ===================== MAIN SEARCH ROUTE ===================== */
+/* ===================== MAIN ROUTE ===================== */
 app.post("/api/search", async (req, res) => {
   resetIfNeeded();
 
   const { query, mode, memory } = req.body || {};
-
   if (!query || typeof query !== "string") {
-    return res.status(400).json({ answer: "Invalid query." });
+    return res.json({ answer: "Invalid query.", confidence: 0 });
   }
 
-  /* ---------- Identity handling ---------- */
+  /* ---------- IDENTITY HANDLING (FIRST, ALWAYS) ---------- */
   if (isIdentityQuestion(query)) {
     return res.json({
       answer:
-        "I am ExploreNet — a smart search assistant. I connect your questions, remember context, and summarize information from the web to give clear answers.",
+        "I am ExploreNet, a smart search assistant created to help users understand information by connecting questions and summarizing knowledge from the web.",
       confidence: 1,
     });
   }
-
-  const ip = getIp(req);
-  const usage = ensureIpSlot(ip);
 
   const tavKey = process.env.TAVILY_API_KEY;
   if (!tavKey) {
@@ -131,6 +118,9 @@ app.post("/api/search", async (req, res) => {
       results: [],
     });
   }
+
+  const ip = getIp(req);
+  const usage = ensureIp(ip);
 
   /* ===================== AI MODE (FAKE AI) ===================== */
   if (mode === "ai") {
@@ -142,7 +132,6 @@ app.post("/api/search", async (req, res) => {
     }
     usage.ai += 1;
 
-    // accept only strong memory from frontend
     const safeMemory = Array.isArray(memory)
       ? memory.filter(m => m.confidence >= 0.6).slice(-3)
       : [];
@@ -152,11 +141,9 @@ app.post("/api/search", async (req, res) => {
     try {
       const r = await fetch("https://api.tavily.com/search", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${tavKey}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          api_key: tavKey,
           query: finalQuery,
           search_depth: "advanced",
           include_answer: true,
@@ -191,11 +178,9 @@ app.post("/api/search", async (req, res) => {
     try {
       const r = await fetch("https://api.tavily.com/search", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${tavKey}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          api_key: tavKey,
           query,
           search_depth: "advanced",
           include_answer: true,
@@ -204,7 +189,6 @@ app.post("/api/search", async (req, res) => {
       });
 
       const data = await r.json();
-
       return res.json({
         answer: data.answer || "No summary available.",
         results: data.results || [],
@@ -218,10 +202,7 @@ app.post("/api/search", async (req, res) => {
     }
   }
 
-  return res.json({
-    answer: "Invalid mode.",
-    results: [],
-  });
+  return res.json({ answer: "Invalid mode.", confidence: 0 });
 });
 
 /* ===================== START SERVER ===================== */
