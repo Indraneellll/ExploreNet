@@ -2,7 +2,6 @@
 <html lang="en">
 
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ExploreNet — Neural Search</title>
@@ -26,119 +25,7 @@
       height: 100vh;
     }
 
-    /* Sidebar */
-    .sidebar {
-      width: 320px;
-      background: rgba(255, 255, 255, 0.7);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-right: 1px solid rgba(255, 255, 255, 0.5);
-      display: flex;
-      flex-direction: column;
-      padding: 20px;
-      box-shadow: 5px 0 25px rgba(0, 0, 0, 0.03);
-      z-index: 10;
-    }
 
-    .sidebar-header {
-      margin-bottom: 30px;
-    }
-
-    .new-search-btn {
-      width: 100%;
-      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-      color: white;
-      border: none;
-      border-radius: 16px;
-      padding: 16px 20px;
-      font-size: 16px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-    }
-
-    .new-search-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
-    }
-
-    .new-search-btn .icon {
-      width: 20px;
-      height: 20px;
-    }
-
-    .search-history {
-      flex: 1;
-      overflow-y: auto;
-    }
-
-    .history-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 12px 16px;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      margin-bottom: 8px;
-      color: #475569;
-    }
-
-    .history-item:hover {
-      background: rgba(255, 255, 255, 0.6);
-      color: #1e293b;
-    }
-
-    .history-icon {
-      width: 16px;
-      height: 16px;
-      color: #3b82f6;
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-
-    .history-content {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .history-title {
-      font-size: 14px;
-      font-weight: 500;
-      margin-bottom: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .history-date {
-      font-size: 12px;
-      color: #94a3b8;
-    }
-
-    .sidebar-footer {
-      margin-top: auto;
-      padding: 20px;
-      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-      border: 1px solid rgba(255, 255, 255, 0.8);
-      border-radius: 16px;
-    }
-
-    .footer-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: #334155;
-      margin-bottom: 4px;
-    }
-
-    .footer-subtitle {
-      font-size: 12px;
-      color: #64748b;
-    }
 
     /* Main */
     .main-content {
@@ -170,24 +57,7 @@
       gap: 20px;
     }
 
-    .menu-btn {
-      background: white;
-      border: 1px solid #e2e8f0;
-      color: #64748b;
-      cursor: pointer;
-      padding: 10px;
-      border-radius: 12px;
-      transition: all 0.2s ease;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
-      display: none;
-      /* Hidden on desktop */
-    }
 
-    .menu-btn:hover {
-      background: #f8fafc;
-      color: #334155;
-      transform: translateY(-1px);
-    }
 
     .header-brand {
       display: flex;
@@ -388,7 +258,8 @@
 
     .chat-messages {
       max-width: 800px;
-      margin: 0 auto 20px;
+      margin: 0 auto 100px;
+      /* Space for fixed search bar */
     }
 
     .message-row {
@@ -432,15 +303,22 @@
 
     /* Search section */
     .search-section {
+      position: fixed;
+      bottom: 10px;
+      left: 0;
+      right: 0;
       padding: 0 40px;
-      margin-bottom: 10px;
-      margin-top: auto;
+      z-index: 100;
+      pointer-events: none;
+      /* Let clicks pass through outside the container */
     }
 
     .search-container {
       position: relative;
       max-width: 800px;
       margin: 0 auto;
+      pointer-events: auto;
+      /* Re-enable pointer events for the input */
     }
 
     .search-input {
@@ -449,7 +327,7 @@
       backdrop-filter: blur(10px);
       border: 1px solid rgba(226, 232, 240, 0.8);
       border-radius: 20px;
-      padding: 12px 70px 12px 24px;
+      padding: 20px 70px 20px 24px;
       font-size: 16px;
       color: #1e293b;
       outline: none;
@@ -495,41 +373,12 @@
       height: 20px;
     }
 
-    /* Footer */
-    .footer {
-      margin-top: 10px;
-      padding: 10px 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-    }
 
-    .footer-text {
-      font-size: 13px;
-      color: #94a3b8;
-      text-align: center;
-    }
 
-    .help-btn {
-      background: white;
-      border: 1px solid #e2e8f0;
-      color: #64748b;
-      cursor: pointer;
-      padding: 6px;
-      border-radius: 8px;
-      transition: all 0.2s ease;
-    }
 
-    .help-btn:hover {
-      color: #3b82f6;
-      border-color: #3b82f6;
-    }
 
-    .help-btn svg {
-      width: 16px;
-      height: 16px;
-    }
+
+
 
     /* Responsive */
     @media (max-width: 768px) {
@@ -537,12 +386,7 @@
         flex-direction: column;
       }
 
-      .sidebar {
-        width: 100%;
-        height: auto;
-        max-height: 200px;
-        overflow-y: auto;
-      }
+
 
       .header {
         padding: 16px 20px;
@@ -575,20 +419,11 @@
         padding: 0 20px;
       }
 
-      .footer {
-        padding: 16px 20px;
-      }
 
-      .menu-btn {
-        display: block;
-        /* Show menu button on mobile */
-      }
     }
 
     @media (max-width: 480px) {
-      .sidebar {
-        padding: 16px;
-      }
+
 
       .welcome-icon {
         width: 60px;
@@ -612,26 +447,6 @@
         padding: 20px;
       }
     }
-
-    /* Mobile: sidebar hidden by default */
-    @media (max-width: 768px) {
-      .sidebar {
-        transform: translateX(-100%);
-        position: fixed;
-        top: 0;
-        left: 0;
-        height: 100%;
-        width: 280px;
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 999;
-        background: rgba(255, 255, 255, 0.95);
-        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
-      }
-
-      .sidebar.mobile-open {
-        transform: translateX(0);
-      }
-    }
   </style>
 </head>
 
@@ -646,13 +461,7 @@
       <header class="header" style="display:flex;align-items:center;justify-content:space-between;">
 
         <!-- LEFT: MENU BUTTON -->
-        <button class="menu-btn" style="background:none;border:none;color:#94a3b8;cursor:pointer;padding:8px;">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-          </svg>
-        </button>
+
 
         <!-- CENTER: BRAND -->
         <div class="header-brand" style="display:flex;align-items:center;gap:12px;">
@@ -753,49 +562,9 @@
         </div>
       </section>
 
-      <!-- Footer -->
-      <footer class="footer">
-        <p class="footer-text">ExploreNet can make mistakes. Consider checking important information.</p>
-        <button class="help-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-            <line x1="12" y1="17" x2="12.01" y2="17"></line>
-          </svg>
-        </button>
-      </footer>
     </main>
   </div>
   <script>
-    const menuBtn = document.querySelector('.menu-btn');
-    const sidebar = document.querySelector('.sidebar');
-
-    // Open/close sidebar on mobile
-    if (menuBtn && sidebar) {
-      menuBtn.addEventListener('click', () => {
-        sidebar.classList.toggle('mobile-open');
-      });
-    }
-
-    // Clicking outside closes sidebar
-    document.addEventListener('click', (e) => {
-      if (window.innerWidth <= 768 && sidebar && menuBtn) {
-        if (!sidebar.contains(e.target) && !menuBtn.contains(e.target)) {
-          sidebar.classList.remove('mobile-open');
-        }
-      }
-    });
-
-    // When resizing back to desktop → reset sidebar
-    window.addEventListener('resize', () => {
-      if (window.innerWidth > 768 && sidebar) {
-        sidebar.classList.remove('mobile-open');
-      }
-    });
-
-
-
-
     // simple logout
     function logout() {
       localStorage.removeItem("signedIn");
@@ -804,11 +573,13 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-      // BACKEND URL auto-switch
+      /* ===================== BACKEND ===================== */
       const BACKEND =
         (location.hostname === "localhost" || location.hostname === "127.0.0.1")
           ? "http://localhost:5000/api/search"
           : "https://explorenet.onrender.com/api/search";
+
+      console.log("Using backend:", BACKEND);
 
       const searchInput = document.querySelector(".search-input");
       const searchSubmit = document.querySelector(".search-submit");
@@ -816,39 +587,36 @@
       const chatMessages = document.getElementById("chat-messages");
       const welcomeSection = document.querySelector(".welcome-section");
       const quickActions = document.querySelector(".quick-actions");
-      const newSearchBtn = document.querySelector(".new-search-btn");
-      const historyContainer = document.querySelector(".search-history");
-      const menuBtn = document.querySelector(".menu-btn");
-      const sidebar = document.querySelector(".sidebar");
 
-      // --- Mode buttons bar ---
-      let currentMode = "ai"; // default
+      /* ===================== MODE ===================== */
+      let currentMode = "ai"; // ai | web
 
+      /* ===================== FAKE AI MEMORY ===================== */
+      let aiMemory = []; // [{ topic, answer, confidence }]
+
+      /* ===================== MODE BUTTONS ===================== */
       const modeBar = document.createElement("div");
       modeBar.innerHTML = `
-        <div style="max-width:800px;margin:0 auto 5px;display:flex;gap:10px;">
-          <button class="mode-btn mode-active" data-mode="ai"
-            style="flex:1;padding:6px;border-radius:20px;border:1px solid #38bdf8;background:#1e293b;color:#38bdf8;font-size:13px;cursor:pointer;">
-            AI Mode
-          </button>
-          <button class="mode-btn" data-mode="web"
-            style="flex:1;padding:6px;border-radius:20px;border:1px solid #475569;background:#0f172a;color:#94a3b8;font-size:13px;cursor:pointer;">
-            Web Summary
-          </button>
-        </div>
-      `;
+      <div style="max-width:800px;margin:0 auto 10px;display:flex;gap:10px;pointer-events:auto;">
+        <button class="mode-btn" data-mode="ai"
+          style="flex:1;padding:10px;border-radius:20px;border:1px solid #38bdf8;background:#1e293b;color:#38bdf8;font-size:13px;cursor:pointer;">
+          AI Mode
+        </button>
+        <button class="mode-btn" data-mode="web"
+          style="flex:1;padding:10px;border-radius:20px;border:1px solid #475569;background:#0f172a;color:#94a3b8;font-size:13px;cursor:pointer;">
+          Web Summary
+        </button>
+      </div>
+    `;
       document.querySelector(".search-section").prepend(modeBar);
 
       function updateModeButtons() {
-        document.querySelectorAll(".mode-btn").forEach((btn) => {
-          const mode = btn.dataset.mode;
-          if (mode === currentMode) {
-            btn.classList.add("mode-active");
+        document.querySelectorAll(".mode-btn").forEach(btn => {
+          if (btn.dataset.mode === currentMode) {
             btn.style.background = "#1e293b";
             btn.style.color = "#38bdf8";
             btn.style.borderColor = "#38bdf8";
           } else {
-            btn.classList.remove("mode-active");
             btn.style.background = "#0f172a";
             btn.style.color = "#94a3b8";
             btn.style.borderColor = "#475569";
@@ -856,14 +624,18 @@
         });
       }
 
-      document.querySelectorAll(".mode-btn").forEach((btn) => {
+      document.querySelectorAll(".mode-btn").forEach(btn => {
         btn.addEventListener("click", () => {
           currentMode = btn.dataset.mode;
+
+          // reset memory when leaving AI mode
+          if (currentMode !== "ai") aiMemory = [];
+
           updateModeButtons();
         });
       });
 
-      // --- Chat helpers ---
+      /* ===================== UI HELPERS ===================== */
       function showChatUI() {
         if (welcomeSection) welcomeSection.style.display = "none";
         if (quickActions) quickActions.style.display = "none";
@@ -883,55 +655,32 @@
         chatSection.scrollTop = chatSection.scrollHeight;
       }
 
-      function addHistoryItem(title) {
-        const date = new Date().toLocaleDateString();
-        const item = document.createElement("div");
-        item.className = "history-item";
-        item.innerHTML = `
-          <svg class="history-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14,2 14,8 20,8"></polyline>
-          </svg>
-          <div class="history-content">
-            <div class="history-title">${title}</div>
-            <div class="history-date">${date}</div>
-          </div>
-        `;
-        historyContainer.prepend(item);
-      }
-
-      // front-end daily limit for AI mode (per browser)
+      /* ===================== AI DAILY LIMIT ===================== */
       const MAX_AI_PER_DAY_FRONT = 20;
+
       function canUseAiToday() {
-        const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
-        const raw = localStorage.getItem("snDailyAiUsage") || "{}";
-        let data;
+        const today = new Date().toISOString().slice(0, 10);
+        let data = {};
         try {
-          data = JSON.parse(raw);
-        } catch {
-          data = {};
-        }
+          data = JSON.parse(localStorage.getItem("snDailyAiUsage") || "{}");
+        } catch { }
+
         const count = data[today] || 0;
-        if (count >= MAX_AI_PER_DAY_FRONT) {
-          return { ok: false, remaining: 0 };
-        }
+        if (count >= MAX_AI_PER_DAY_FRONT) return false;
+
         data[today] = count + 1;
         localStorage.setItem("snDailyAiUsage", JSON.stringify(data));
-        return { ok: true, remaining: MAX_AI_PER_DAY_FRONT - (count + 1) };
+        return true;
       }
 
-      // --- Main search action ---
+      /* ===================== MAIN SEARCH ===================== */
       async function performSearch() {
         const text = searchInput.value.trim();
         if (!text) return;
 
-        // enforce frontend AI limit
-        if (currentMode === "ai") {
-          const limit = canUseAiToday();
-          if (!limit.ok) {
-            alert("You have reached your daily free AI limit (20). Please try Web Summary mode or try again tomorrow.");
-            return;
-          }
+        if (currentMode === "ai" && !canUseAiToday()) {
+          alert("Daily AI mode limit reached.");
+          return;
         }
 
         showChatUI();
@@ -941,7 +690,6 @@
         loader.className = "message-row message-ai";
         loader.innerHTML = `<div class="message-bubble loading">Thinking...</div>`;
         chatMessages.appendChild(loader);
-        chatSection.scrollTop = chatSection.scrollHeight;
 
         try {
           const res = await fetch(BACKEND, {
@@ -950,104 +698,75 @@
             body: JSON.stringify({
               query: text,
               mode: currentMode,
-            }),
+              memory: currentMode === "ai" ? aiMemory : []
+            })
           });
+
+          if (!res.ok) {
+            throw new Error("HTTP error " + res.status);
+          }
 
           const data = await res.json();
           loader.remove();
 
+          /* ===================== AI MODE ===================== */
           if (currentMode === "ai") {
-            addMessage("ai", data.answer || "No AI response.");
-          } else {
-            let html = "";
-            if (data.answer) {
-              html += `<b>${data.answer}</b><br><br>`;
-            } else {
-              html += "<b>No summary available.</b><br><br>";
-            }
-            if (Array.isArray(data.results) && data.results.length) {
-              html += "<u>Sources:</u><br>";
-              data.results.forEach((r) => {
-                if (!r) return;
-                const title = r.title || r.url || "Source";
-                if (r.url) {
-                  html += `• <a href="${r.url}" target="_blank">${title}</a><br>`;
-                } else {
-                  html += `• ${title}<br>`;
-                }
+            const answer = data.answer || "No answer found.";
+            addMessage("ai", answer);
+
+            // store only strong memory
+            if (data.confidence >= 0.6 && answer !== "No answer found.") {
+              aiMemory.push({
+                topic: text,
+                answer,
+                confidence: data.confidence
               });
+              aiMemory = aiMemory.slice(-3);
             }
+          }
+
+          /* ===================== WEB MODE ===================== */
+          if (currentMode === "web") {
+            let html = `<b>${data.answer || "No summary available."}</b><br><br>`;
+            (data.results || []).forEach(r => {
+              if (r?.url) {
+                html += `• <a href="${r.url}" target="_blank">${r.title || r.url}</a><br>`;
+              }
+            });
             addMessage("ai", html);
           }
+
         } catch (err) {
-          console.error(err);
+          console.error("FETCH ERROR:", err);
           loader.remove();
-          addMessage("ai", "❌ Error connecting to backend.");
+          addMessage(
+            "ai",
+            "❌ Could not reach the server. Please check your connection and try again."
+          );
         }
 
         searchInput.value = "";
       }
 
-      // Search triggers
+      /* ===================== EVENTS ===================== */
       searchSubmit.addEventListener("click", performSearch);
-      searchInput.addEventListener("keypress", (e) => {
+      searchInput.addEventListener("keypress", e => {
         if (e.key === "Enter") performSearch();
       });
 
-      // Quick actions
-      document.querySelectorAll(".action-card").forEach((card) => {
+      document.querySelectorAll(".action-card").forEach(card => {
         card.addEventListener("click", () => {
-          const text = card.querySelector(".action-text").textContent;
-          searchInput.value = text;
+          searchInput.value = card.querySelector(".action-text").textContent;
           performSearch();
         });
       });
 
-      // New search (new chat)
-      if (newSearchBtn) {
-        newSearchBtn.addEventListener("click", () => {
-          const firstUserMsg = chatMessages.querySelector(".message-user .message-bubble");
-          if (firstUserMsg) {
-            const text = firstUserMsg.textContent || "";
-            const title = text.length > 28 ? text.slice(0, 28) + "..." : text;
-            addHistoryItem(title || "New chat");
-          }
-          chatMessages.innerHTML = "";
-          if (welcomeSection) welcomeSection.style.display = "block";
-          if (quickActions) quickActions.style.display = "grid";
-          chatSection.style.display = "none";
-          searchInput.value = "";
-          searchInput.focus();
-        });
-      }
-
-      // Mobile sidebar toggle
-      if (menuBtn && sidebar) {
-        menuBtn.addEventListener("click", () => {
-          sidebar.classList.toggle("mobile-open");
-        });
-      }
-
-      document.addEventListener("click", (e) => {
-        if (window.innerWidth <= 768 && sidebar && menuBtn) {
-          if (!sidebar.contains(e.target) && !menuBtn.contains(e.target)) {
-            sidebar.classList.remove("mobile-open");
-          }
-        }
-      });
-
-      window.addEventListener("resize", () => {
-        if (window.innerWidth > 768 && sidebar) {
-          sidebar.classList.remove("mobile-open");
-        }
-      });
-
-      // smooth scroll
       document.documentElement.style.scrollBehavior = "smooth";
-
-      updateModeButtons(); // set initial mode styles
+      updateModeButtons();
     });
   </script>
+
+
 </body>
 
 </html>
