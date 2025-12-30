@@ -447,6 +447,21 @@
         padding: 20px;
       }
     }
+
+    .new-chat-btn {
+      background: white;
+      border: 1px solid #e2e8f0;
+      color: #334155;
+      padding: 8px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .new-chat-btn:hover {
+      background: #f8fafc;
+    }
   </style>
 </head>
 
@@ -478,6 +493,9 @@
 
         <!-- RIGHT: LOGOUT BUTTON -->
         <button class="logout-btn" onclick="logout()">Logout</button>
+        <button id="newChatBtn" class="new-chat-btn">
+          New Chat
+        </button>
 
       </header>
 
@@ -565,7 +583,7 @@
     </main>
   </div>
   <script>
-    // simple logout
+    /* ===================== LOGOUT ===================== */
     function logout() {
       localStorage.removeItem("signedIn");
       localStorage.removeItem("snDailyAiUsage");
@@ -573,41 +591,43 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => {
+
       /* ===================== BACKEND ===================== */
       const BACKEND =
         (location.hostname === "localhost" || location.hostname === "127.0.0.1")
           ? "http://localhost:5000/api/search"
           : "https://explorenet.onrender.com/api/search";
 
-      console.log("Using backend:", BACKEND);
-
+      /* ===================== ELEMENTS ===================== */
       const searchInput = document.querySelector(".search-input");
       const searchSubmit = document.querySelector(".search-submit");
       const chatSection = document.getElementById("chat-section");
       const chatMessages = document.getElementById("chat-messages");
       const welcomeSection = document.querySelector(".welcome-section");
       const quickActions = document.querySelector(".quick-actions");
+      const newChatBtn = document.getElementById("newChatBtn"); // HEADER BUTTON
 
       /* ===================== MODE ===================== */
       let currentMode = "ai"; // ai | web
 
-      /* ===================== FAKE AI MEMORY ===================== */
-      let aiMemory = []; // [{ topic, answer, confidence }]
+      /* ===================== MEMORY ===================== */
+      // memory[0] = BASE QUESTION
+      let aiMemory = [];
 
       /* ===================== MODE BUTTONS ===================== */
       const modeBar = document.createElement("div");
       modeBar.innerHTML = `
-      <div style="max-width:800px;margin:0 auto 10px;display:flex;gap:10px;pointer-events:auto;">
-        <button class="mode-btn" data-mode="ai"
-          style="flex:1;padding:10px;border-radius:20px;border:1px solid #38bdf8;background:#1e293b;color:#38bdf8;font-size:13px;cursor:pointer;">
-          AI Mode
-        </button>
-        <button class="mode-btn" data-mode="web"
-          style="flex:1;padding:10px;border-radius:20px;border:1px solid #475569;background:#0f172a;color:#94a3b8;font-size:13px;cursor:pointer;">
-          Web Summary
-        </button>
-      </div>
-    `;
+    <div style="max-width:800px;margin:0 auto 10px;display:flex;gap:10px;">
+      <button class="mode-btn" data-mode="ai"
+        style="flex:1;padding:10px;border-radius:20px;border:1px solid #38bdf8;background:#1e293b;color:#38bdf8;">
+        AI Mode
+      </button>
+      <button class="mode-btn" data-mode="web"
+        style="flex:1;padding:10px;border-radius:20px;border:1px solid #475569;background:#0f172a;color:#94a3b8;">
+        Web Summary
+      </button>
+    </div>
+  `;
       document.querySelector(".search-section").prepend(modeBar);
 
       function updateModeButtons() {
@@ -627,50 +647,40 @@
       document.querySelectorAll(".mode-btn").forEach(btn => {
         btn.addEventListener("click", () => {
           currentMode = btn.dataset.mode;
-
-          // reset memory when leaving AI mode
           if (currentMode !== "ai") aiMemory = [];
-
           updateModeButtons();
         });
       });
 
+      /* ===================== NEW CHAT (HEADER BUTTON) ===================== */
+      newChatBtn.addEventListener("click", () => {
+        aiMemory = [];
+        chatMessages.innerHTML = "";
+        searchInput.value = "";
+
+        welcomeSection.style.display = "block";
+        quickActions.style.display = "grid";
+        chatSection.style.display = "none";
+
+        searchInput.focus();
+      });
+
       /* ===================== UI HELPERS ===================== */
       function showChatUI() {
-        if (welcomeSection) welcomeSection.style.display = "none";
-        if (quickActions) quickActions.style.display = "none";
+        welcomeSection.style.display = "none";
+        quickActions.style.display = "none";
         chatSection.style.display = "block";
       }
 
       function addMessage(role, text) {
         const row = document.createElement("div");
         row.className = "message-row " + (role === "user" ? "message-user" : "message-ai");
-
         const bubble = document.createElement("div");
         bubble.className = "message-bubble";
         bubble.innerHTML = (text || "").replace(/\n/g, "<br>");
-
         row.appendChild(bubble);
         chatMessages.appendChild(row);
         chatSection.scrollTop = chatSection.scrollHeight;
-      }
-
-      /* ===================== AI DAILY LIMIT ===================== */
-      const MAX_AI_PER_DAY_FRONT = 20;
-
-      function canUseAiToday() {
-        const today = new Date().toISOString().slice(0, 10);
-        let data = {};
-        try {
-          data = JSON.parse(localStorage.getItem("snDailyAiUsage") || "{}");
-        } catch { }
-
-        const count = data[today] || 0;
-        if (count >= MAX_AI_PER_DAY_FRONT) return false;
-
-        data[today] = count + 1;
-        localStorage.setItem("snDailyAiUsage", JSON.stringify(data));
-        return true;
       }
 
       /* ===================== MAIN SEARCH ===================== */
@@ -678,17 +688,12 @@
         const text = searchInput.value.trim();
         if (!text) return;
 
-        if (currentMode === "ai" && !canUseAiToday()) {
-          alert("Daily AI mode limit reached.");
-          return;
-        }
-
         showChatUI();
         addMessage("user", text);
 
         const loader = document.createElement("div");
         loader.className = "message-row message-ai";
-        loader.innerHTML = `<div class="message-bubble loading">Thinking...</div>`;
+        loader.innerHTML = `<div class="message-bubble loading">Searching...</div>`;
         chatMessages.appendChild(loader);
 
         try {
@@ -702,47 +707,19 @@
             })
           });
 
-          if (!res.ok) {
-            throw new Error("HTTP error " + res.status);
-          }
-
           const data = await res.json();
           loader.remove();
 
-          /* ===================== AI MODE ===================== */
-          if (currentMode === "ai") {
-            const answer = data.answer || "No answer found.";
-            addMessage("ai", answer);
+          addMessage("ai", data.answer || "No answer found.");
 
-            // store only strong memory
-            if (data.confidence >= 0.6 && answer !== "No answer found.") {
-              aiMemory.push({
-                topic: text,
-                answer,
-                confidence: data.confidence
-              });
-              aiMemory = aiMemory.slice(-3);
-            }
+          // Store BASE QUESTION once (AI mode)
+          if (currentMode === "ai" && aiMemory.length === 0) {
+            aiMemory.push({ topic: text, answer: data.answer });
           }
 
-          /* ===================== WEB MODE ===================== */
-          if (currentMode === "web") {
-            let html = `<b>${data.answer || "No summary available."}</b><br><br>`;
-            (data.results || []).forEach(r => {
-              if (r?.url) {
-                html += `• <a href="${r.url}" target="_blank">${r.title || r.url}</a><br>`;
-              }
-            });
-            addMessage("ai", html);
-          }
-
-        } catch (err) {
-          console.error("FETCH ERROR:", err);
+        } catch {
           loader.remove();
-          addMessage(
-            "ai",
-            "❌ Could not reach the server. Please check your connection and try again."
-          );
+          addMessage("ai", "❌ Could not reach the server.");
         }
 
         searchInput.value = "";
@@ -750,7 +727,7 @@
 
       /* ===================== EVENTS ===================== */
       searchSubmit.addEventListener("click", performSearch);
-      searchInput.addEventListener("keypress", e => {
+      searchInput.addEventListener("keydown", e => {
         if (e.key === "Enter") performSearch();
       });
 
@@ -761,10 +738,12 @@
         });
       });
 
-      document.documentElement.style.scrollBehavior = "smooth";
       updateModeButtons();
     });
   </script>
+
+
+
 
 
 </body>
